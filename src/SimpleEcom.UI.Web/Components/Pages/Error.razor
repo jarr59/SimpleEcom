@@ -1,0 +1,31 @@
+﻿@page "/Error"
+@using System.Diagnostics
+
+<PageTitle>Error · SimpleEcom</PageTitle>
+
+<div class="empty-state">
+    <h1 class="empty-state__title">Algo ha salido mal</h1>
+    <p class="text-muted">Se ha producido un error al procesar tu solicitud. Inténtalo de nuevo en unos minutos.</p>
+
+    @if (ShowRequestId)
+    {
+        <p class="small text-muted">Código de referencia: <code>@RequestId</code></p>
+    }
+
+    <a class="btn btn-dark" href="">Volver al inicio</a>
+</div>
+
+@code{
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    [PersistentState]
+    public string? RequestId { get; set; }
+
+    private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    protected override void OnInitialized()
+    {
+        RequestId ??= Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+    }
+}

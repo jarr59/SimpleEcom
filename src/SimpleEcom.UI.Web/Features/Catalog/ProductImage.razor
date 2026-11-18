@@ -1,0 +1,13 @@
+@* Imagen de reserva: los productos aún no tienen foto. Color estable por SKU + iniciales del nombre. *@
+
+<div class="product-image @CssClass" style="--hue: @CatalogDisplay.Hue(Product.Sku)" role="img" aria-label="@Product.Name">
+    <span aria-hidden="true">@CatalogDisplay.Initials(Product.Name)</span>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ProductResponse Product { get; set; } = default!;
+
+    [Parameter]
+    public string? CssClass { get; set; }
+}

@@ -1,0 +1,19 @@
+@* Tarjeta de producto para rejillas (catálogo, portada, sugerencias). Toda la tarjeta enlaza a la ficha. *@
+
+<article class="product-card @(Product.Stock <= 0 ? "product-card--soldout" : null)">
+    <a class="product-card__link" href="products/@Product.Id">
+        <ProductImage Product="Product" />
+        <div class="product-card__body">
+            <h3 class="product-card__name">@Product.Name</h3>
+            <div class="product-card__meta">
+                <span class="product-card__price">@CatalogDisplay.FormatPrice(Product.Price, Product.Currency)</span>
+                <StockBadge Stock="Product.Stock" />
+            </div>
+        </div>
+    </a>
+</article>
+
+@code {
+    [Parameter, EditorRequired]
+    public ProductResponse Product { get; set; } = default!;
+}

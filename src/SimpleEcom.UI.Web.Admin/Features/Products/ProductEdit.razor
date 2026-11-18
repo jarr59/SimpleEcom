@@ -1,0 +1,55 @@
+@page "/products/{Id:guid}/edit"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject ProductEditorViewModel Vm
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>Editar producto · SimpleEcom Admin</PageTitle>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="products">Productos</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Editar</li>
+    </ol>
+</nav>
+
+@if (Vm.Load.IsBusy)
+{
+    <div class="d-flex align-items-center gap-2 text-muted" role="status">
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Cargando producto…
+    </div>
+}
+else if (!Vm.IsLoaded)
+{
+    <div class="alert alert-warning" role="alert">@Vm.Load.Error</div>
+    <a class="btn btn-outline-secondary" href="products">Volver al listado</a>
+}
+else
+{
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <h1 class="h3 mb-0">@Vm.Form.Name</h1>
+        <span class="badge @(Vm.IsActive ? "text-bg-success" : "text-bg-secondary")">@(Vm.IsActive ? "Activo" : "Inactivo")</span>
+    </div>
+
+    <ProductForm Vm="Vm" OnValidSubmit="SaveAsync" />
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    protected override void OnInitialized() => Vm.StateChanged += StateHasChanged;
+
+    protected override Task OnParametersSetAsync() =>
+        Vm.ProductId == Id ? Task.CompletedTask : Vm.LoadAsync(Id);
+
+    private async Task SaveAsync()
+    {
+        if (await Vm.SaveAsync())
+        {
+            Navigation.NavigateTo("products?status=updated");
+        }
+    }
+
+    public void Dispose() => Vm.StateChanged -= StateHasChanged;
+}

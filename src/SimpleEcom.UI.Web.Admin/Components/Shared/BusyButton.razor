@@ -1,0 +1,50 @@
+@* Botón que muestra un spinner y se deshabilita mientras la acción está en curso. *@
+
+<button type="@Type"
+        class="btn @CssClass"
+        disabled="@(Disabled || Busy)"
+        aria-busy="@(Busy ? "true" : null)"
+        @onclick="OnClick">
+    @if (Busy)
+    {
+        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+        @if (BusyText is not null)
+        {
+            @BusyText
+        }
+        else
+        {
+            @ChildContent
+        }
+    }
+    else
+    {
+        @ChildContent
+    }
+</button>
+
+@code {
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    /// <summary>La acción asociada está ejecutándose: muestra el spinner y bloquea el botón.</summary>
+    [Parameter]
+    public bool Busy { get; set; }
+
+    /// <summary>Texto a mostrar mientras está ocupado (p. ej. "Guardando…"). Si es null, se mantiene el contenido.</summary>
+    [Parameter]
+    public string? BusyText { get; set; }
+
+    /// <summary>Deshabilitado por otra razón (p. ej. otra acción en curso en la página).</summary>
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public string CssClass { get; set; } = "btn-primary";
+
+    [Parameter]
+    public string Type { get; set; } = "button";
+
+    [Parameter]
+    public EventCallback OnClick { get; set; }
+}

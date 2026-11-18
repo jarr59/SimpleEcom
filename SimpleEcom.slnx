@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SimpleEcom.Api/SimpleEcom.Api.csproj" />
+    <Project Path="src/SimpleEcom.Shared/SimpleEcom.Shared.csproj" />
+    <Project Path="src/SimpleEcom.UI.Web.Admin/SimpleEcom.UI.Web.Admin.csproj" />
+    <Project Path="src/SimpleEcom.UI.Web/SimpleEcom.UI.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SimpleEcom.Api.Test/SimpleEcom.Api.Test.csproj" />
+    <Project Path="tests/SimpleEcom.UI.Web.Admin.Test/SimpleEcom.UI.Web.Admin.Test.csproj" />
+    <Project Path="tests/SimpleEcom.UI.Web.Test/SimpleEcom.UI.Web.Test.csproj" />
+  </Folder>
+</Solution>

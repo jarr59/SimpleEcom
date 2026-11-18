@@ -1,0 +1,76 @@
+@* Formulario de alta/edición. Renderiza el estado del ProductEditorViewModel; no contiene lógica. *@
+
+<EditForm Model="Vm.Form" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+
+    @if (Vm.Save.Error is not null)
+    {
+        <div class="alert alert-danger" role="alert">@Vm.Save.Error</div>
+    }
+
+    @* Mientras se guarda, todos los campos quedan bloqueados para evitar cambios a medias. *@
+    <fieldset disabled="@Vm.Save.IsBusy" aria-busy="@(Vm.Save.IsBusy ? "true" : null)">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="sku" class="form-label">SKU</label>
+                <InputText id="sku" class="form-control" @bind-Value="Vm.Form.Sku" disabled="@Vm.IsEdit" />
+                @if (Vm.IsEdit)
+                {
+                    <div class="form-text">El SKU no se puede modificar.</div>
+                }
+                <ValidationMessage For="() => Vm.Form.Sku" class="text-danger" />
+            </div>
+
+            <div class="col-md-8">
+                <label for="name" class="form-label">Nombre</label>
+                <InputText id="name" class="form-control" @bind-Value="Vm.Form.Name" />
+                <ValidationMessage For="() => Vm.Form.Name" class="text-danger" />
+            </div>
+
+            <div class="col-12">
+                <label for="description" class="form-label">Descripción</label>
+                <InputTextArea id="description" class="form-control" rows="3" @bind-Value="Vm.Form.Description" />
+            </div>
+
+            <div class="col-md-4">
+                <label for="price" class="form-label">Precio</label>
+                <InputNumber id="price" class="form-control" step="0.01" min="0" @bind-Value="Vm.Form.Price" />
+                <ValidationMessage For="() => Vm.Form.Price" class="text-danger" />
+            </div>
+
+            <div class="col-md-4">
+                <label for="currency" class="form-label">Moneda</label>
+                <InputSelect id="currency" class="form-select" @bind-Value="Vm.Form.Currency">
+                    @foreach (var currency in Enum.GetValues<Currency>())
+                    {
+                        <option value="@currency">@currency</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => Vm.Form.Currency" class="text-danger" />
+            </div>
+
+            <div class="col-md-4">
+                <label for="stock" class="form-label">Stock</label>
+                <InputNumber id="stock" class="form-control" min="0" @bind-Value="Vm.Form.Stock" />
+                <ValidationMessage For="() => Vm.Form.Stock" class="text-danger" />
+            </div>
+        </div>
+    </fieldset>
+
+    <div class="d-flex gap-2 mt-4">
+        <BusyButton Type="submit" Busy="Vm.Save.IsBusy" BusyText="Guardando…">@Vm.SubmitText</BusyButton>
+        <a class="btn btn-outline-secondary @(Vm.Save.IsBusy ? "disabled" : null)"
+           aria-disabled="@(Vm.Save.IsBusy ? "true" : null)"
+           tabindex="@(Vm.Save.IsBusy ? -1 : 0)"
+           href="products">Cancelar</a>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public ProductEditorViewModel Vm { get; set; } = default!;
+
+    /// <summary>Se invoca cuando el formulario pasa la validación de la UI; la página decide guardar y navegar.</summary>
+    [Parameter]
+    public EventCallback OnValidSubmit { get; set; }
+}

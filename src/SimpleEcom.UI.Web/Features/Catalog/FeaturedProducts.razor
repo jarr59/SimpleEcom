@@ -1,0 +1,35 @@
+@* Sección de portada con productos destacados. *@
+@inject FeaturedProductsViewModel Vm
+@implements IDisposable
+
+<section class="section" aria-labelledby="featured-title">
+    <div class="section__header">
+        <h2 id="featured-title" class="section__title">Destacados</h2>
+        <a class="link-arrow" href="products">Ver todo el catálogo</a>
+    </div>
+
+    @if (Vm.ErrorMessage is not null)
+    {
+        <div class="alert alert-warning" role="alert">
+            Ahora mismo no podemos mostrar los productos. Inténtalo de nuevo en unos minutos.
+        </div>
+    }
+    else if (Vm.Products is { Count: 0 })
+    {
+        <p class="text-muted">Estamos preparando nuevos productos. ¡Vuelve pronto!</p>
+    }
+    else
+    {
+        <ProductGrid Products="Vm.Products" Placeholders="FeaturedProductsViewModel.MaxItems" />
+    }
+</section>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        Vm.StateChanged += StateHasChanged;
+        await Vm.LoadAsync();
+    }
+
+    public void Dispose() => Vm.StateChanged -= StateHasChanged;
+}

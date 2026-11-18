@@ -1,0 +1,90 @@
+@page "/products"
+@attribute [StreamRendering]
+@inject CatalogViewModel Vm
+@implements IDisposable
+
+@* Renderizado estático en servidor: los filtros viajan en la URL (?q=&sort=&available=), así se pueden compartir y los indexan los buscadores. *@
+
+<PageTitle>@Vm.Title · SimpleEcom</PageTitle>
+
+<nav aria-label="Ruta de navegación">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="">Inicio</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Catálogo</li>
+    </ol>
+</nav>
+
+<div class="page-header">
+    <h1 class="page-title">@Vm.Title</h1>
+    @if (Vm.Summary is not null)
+    {
+        <p class="page-subtitle">@Vm.Summary</p>
+    }
+</div>
+
+<form class="filters" method="get" action="products" role="search" data-enhance>
+    <div class="filters__search">
+        <label for="catalog-search" class="visually-hidden">Buscar productos</label>
+        <input id="catalog-search" name="q" type="search" class="form-control" placeholder="Buscar por nombre o referencia" value="@Vm.Search" />
+    </div>
+    <div class="filters__sort">
+        <label for="catalog-sort" class="visually-hidden">Ordenar por</label>
+        <select id="catalog-sort" name="sort" class="form-select" onchange="this.form.requestSubmit()">
+            @foreach (var (value, label) in CatalogSort.Options)
+            {
+                <option value="@value" selected="@(value == Vm.Sort)">@label</option>
+            }
+        </select>
+    </div>
+    <div class="form-check filters__available">
+        <input id="catalog-available" name="available" type="checkbox" value="true" class="form-check-input"
+               checked="@Vm.OnlyAvailable" onchange="this.form.requestSubmit()" />
+        <label for="catalog-available" class="form-check-label">Solo disponibles</label>
+    </div>
+    <button type="submit" class="btn btn-dark">Buscar</button>
+    @if (Vm.HasFilters)
+    {
+        <a class="btn btn-link" href="products">Quitar filtros</a>
+    }
+</form>
+
+@if (Vm.ErrorMessage is not null)
+{
+    <div class="alert alert-warning" role="alert">
+        <strong>No podemos cargar el catálogo ahora mismo.</strong> Inténtalo de nuevo en unos minutos.
+    </div>
+}
+else if (Vm.Products is { Count: 0 })
+{
+    <div class="empty-state">
+        <p class="empty-state__title">No encontramos productos con esos criterios.</p>
+        <p class="text-muted">Prueba con otra palabra o quita los filtros.</p>
+        <a class="btn btn-outline-dark" href="products">Ver todo el catálogo</a>
+    </div>
+}
+else
+{
+    <ProductGrid Products="Vm.Products" Placeholders="8" />
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "q")]
+    public string? Search { get; set; }
+
+    [SupplyParameterFromQuery(Name = "sort")]
+    public string? Sort { get; set; }
+
+    [SupplyParameterFromQuery(Name = "available")]
+    public bool? Available { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Vm.StateChanged += StateHasChanged;
+        Vm.Search = Search;
+        Vm.Sort = Sort ?? CatalogSort.Default;
+        Vm.OnlyAvailable = Available == true;
+        await Vm.LoadAsync();
+    }
+
+    public void Dispose() => Vm.StateChanged -= StateHasChanged;
+}

@@ -1,0 +1,33 @@
+@* Rejilla de tarjetas. Si Products es null muestra esqueletos de carga. *@
+
+<div class="product-grid" aria-busy="@(Products is null ? "true" : null)">
+    @if (Products is null)
+    {
+        @for (var i = 0; i < Placeholders; i++)
+        {
+            <div class="product-card product-card--skeleton" aria-hidden="true">
+                <div class="product-image skeleton"></div>
+                <div class="product-card__body">
+                    <div class="skeleton skeleton-line w-75"></div>
+                    <div class="skeleton skeleton-line w-50"></div>
+                </div>
+            </div>
+        }
+        <span class="visually-hidden" role="status">Cargando productos…</span>
+    }
+    else
+    {
+        @foreach (var product in Products)
+        {
+            <ProductCard @key="product.Id" Product="product" />
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<ProductResponse>? Products { get; set; }
+
+    [Parameter]
+    public int Placeholders { get; set; } = 4;
+}

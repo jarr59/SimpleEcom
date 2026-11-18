@@ -1,0 +1,10 @@
+@* Disponibilidad del producto: en stock, últimas unidades o agotado. *@
+
+<span class="stock-badge stock-badge--@CatalogDisplay.GetStockStatus(Stock).ToString().ToLowerInvariant()">
+    @CatalogDisplay.StockLabel(Stock)
+</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public int Stock { get; set; }
+}

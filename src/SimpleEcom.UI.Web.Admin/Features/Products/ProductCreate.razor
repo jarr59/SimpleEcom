@@ -1,0 +1,36 @@
+@page "/products/new"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject ProductEditorViewModel Vm
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>Nuevo producto · SimpleEcom Admin</PageTitle>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="products">Productos</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Nuevo</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">Nuevo producto</h1>
+
+<ProductForm Vm="Vm" OnValidSubmit="SaveAsync" />
+
+@code {
+    protected override void OnInitialized()
+    {
+        Vm.StateChanged += StateHasChanged;
+        Vm.StartNew();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (await Vm.SaveAsync())
+        {
+            Navigation.NavigateTo("products?status=created");
+        }
+    }
+
+    public void Dispose() => Vm.StateChanged -= StateHasChanged;
+}

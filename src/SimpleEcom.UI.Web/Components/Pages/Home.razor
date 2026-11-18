@@ -1,0 +1,35 @@
+﻿@page "/"
+@attribute [StreamRendering]
+
+<PageTitle>SimpleEcom · Básicos bien hechos</PageTitle>
+
+<section class="hero">
+    <div class="hero__content">
+        <p class="hero__eyebrow">Nueva temporada</p>
+        <h1 class="hero__title">Básicos bien hechos, a precios claros.</h1>
+        <p class="hero__lead">Camisetas, sudaderas y accesorios para el día a día. Sin complicaciones.</p>
+        <div class="hero__actions">
+            <a class="btn btn-light btn-lg" href="products">Ver catálogo</a>
+            <a class="btn btn-outline-light btn-lg" href="products?available=true">Disponibles ahora</a>
+        </div>
+    </div>
+</section>
+
+<FeaturedProducts />
+
+<section class="section">
+    <div class="perks">
+        <div class="perk">
+            <h2 class="perk__title">Precios transparentes</h2>
+            <p class="perk__text">El precio que ves es el que pagas, sin sorpresas.</p>
+        </div>
+        <div class="perk">
+            <h2 class="perk__title">Stock en tiempo real</h2>
+            <p class="perk__text">Te avisamos cuando quedan pocas unidades.</p>
+        </div>
+        <div class="perk">
+            <h2 class="perk__title">Calidad duradera</h2>
+            <p class="perk__text">Materiales elegidos para durar muchos lavados.</p>
+        </div>
+    </div>
+</section>

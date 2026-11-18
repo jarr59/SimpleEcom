@@ -1,0 +1,96 @@
+@page "/products/{Id:guid}"
+@attribute [StreamRendering]
+@inject ProductDetailViewModel Vm
+@implements IDisposable
+
+<PageTitle>@(Vm.Product?.Name ?? (Vm.IsNotFound ? "Producto no disponible" : "Producto")) · SimpleEcom</PageTitle>
+
+<nav aria-label="Ruta de navegación">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="products">Catálogo</a></li>
+        @if (Vm.Product is not null)
+        {
+            <li class="breadcrumb-item active" aria-current="page">@Vm.Product.Name</li>
+        }
+    </ol>
+</nav>
+
+@if (Vm.IsNotFound)
+{
+    <div class="empty-state">
+        <h1 class="empty-state__title">Este producto no está disponible</h1>
+        <p class="text-muted">Puede que se haya retirado de la tienda o que el enlace no sea correcto.</p>
+        <a class="btn btn-dark" href="products">Ir al catálogo</a>
+    </div>
+}
+else if (Vm.ErrorMessage is not null)
+{
+    <div class="alert alert-warning" role="alert">
+        <strong>No podemos mostrar el producto ahora mismo.</strong> Inténtalo de nuevo en unos minutos.
+    </div>
+}
+else if (Vm.Product is not { } product)
+{
+    <div class="product-detail" aria-busy="true">
+        <div class="product-image product-image--large skeleton"></div>
+        <div>
+            <div class="skeleton skeleton-line skeleton-line--lg w-75"></div>
+            <div class="skeleton skeleton-line w-25"></div>
+            <div class="skeleton skeleton-line w-100 mt-4"></div>
+            <div class="skeleton skeleton-line w-75"></div>
+        </div>
+        <span class="visually-hidden" role="status">Cargando producto…</span>
+    </div>
+}
+else
+{
+    <div class="product-detail">
+        <ProductImage Product="product" CssClass="product-image--large" />
+
+        <div class="product-detail__info">
+            <h1 class="product-detail__name">@product.Name</h1>
+            <p class="product-detail__sku">Ref. @product.Sku</p>
+
+            <p class="product-detail__price">@CatalogDisplay.FormatPrice(product.Price, product.Currency)</p>
+            <StockBadge Stock="product.Stock" />
+
+            @if (!string.IsNullOrWhiteSpace(product.Description))
+            {
+                <p class="product-detail__description">@product.Description</p>
+            }
+
+            <div class="product-detail__actions">
+                @* El carrito llegará con el contexto Carts de la Api; mientras tanto el botón queda deshabilitado. *@
+                <button type="button" class="btn btn-dark btn-lg" disabled aria-describedby="cart-hint">
+                    @(Vm.CanBuy ? "Añadir al carrito" : "Agotado")
+                </button>
+                <p id="cart-hint" class="product-detail__hint">
+                    @(Vm.CanBuy ? "La compra online estará disponible muy pronto." : "Vuelve pronto: reponemos stock con frecuencia.")
+                </p>
+            </div>
+        </div>
+    </div>
+
+    @if (Vm.Related.Count > 0)
+    {
+        <section class="section" aria-labelledby="related-title">
+            <div class="section__header">
+                <h2 id="related-title" class="section__title">También te puede interesar</h2>
+            </div>
+            <ProductGrid Products="Vm.Related" />
+        </section>
+    }
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    protected override void OnInitialized() => Vm.StateChanged += StateHasChanged;
+
+    // OnParametersSet (no OnInitialized): al navegar de una ficha a otra se reutiliza el componente y cambia el Id.
+    protected override Task OnParametersSetAsync() => Vm.LoadAsync(Id);
+
+    public void Dispose() => Vm.StateChanged -= StateHasChanged;
+}
