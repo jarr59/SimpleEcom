@@ -1,11 +1,18 @@
 @page "/products"
-@attribute [StreamRendering]
 @inject CatalogViewModel Vm
 @implements IDisposable
 
-@* Renderizado estático en servidor: los filtros viajan en la URL (?q=&sort=&available=), así se pueden compartir y los indexan los buscadores. *@
+@* Renderizado estático en servidor y sin streaming: el HTML inicial ya trae los productos.
+   Los filtros viajan en la URL (?q=&sort=&available=) para poder compartirlos; la canonical apunta siempre a /products
+   y los resultados de búsqueda no se indexan (noindex, follow), para no llenar el índice de variantes. *@
 
 <PageTitle>@Vm.Title · SimpleEcom</PageTitle>
+<SeoMeta Title="@($"{Vm.Title} · SimpleEcom")"
+         Description="@(string.IsNullOrWhiteSpace(Vm.Search)
+             ? "Catálogo de SimpleEcom: camisetas, sudaderas, gorras, tazas y accesorios para el día a día, a precios claros."
+             : CatalogSeo.MetaDescription($"Resultados de búsqueda de «{Vm.Search.Trim()}» en SimpleEcom.", "Catálogo de SimpleEcom."))"
+         CanonicalPath="products"
+         NoIndex="@(!string.IsNullOrWhiteSpace(Vm.Search))" />
 
 <nav aria-label="Ruta de navegación">
     <ol class="breadcrumb">
@@ -77,6 +84,9 @@ else
     [SupplyParameterFromQuery(Name = "available")]
     public bool? Available { get; set; }
 
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         Vm.StateChanged += StateHasChanged;
@@ -84,6 +94,11 @@ else
         Vm.Sort = Sort ?? CatalogSort.Default;
         Vm.OnlyAvailable = Available == true;
         await Vm.LoadAsync();
+
+        if (Vm.ErrorMessage is not null)
+        {
+            HttpStatus.SetUnavailable(HttpContext);
+        }
     }
 
     public void Dispose() => Vm.StateChanged -= StateHasChanged;

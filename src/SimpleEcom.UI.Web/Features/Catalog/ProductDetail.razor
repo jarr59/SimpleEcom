@@ -1,9 +1,28 @@
 @page "/products/{Id:guid}"
-@attribute [StreamRendering]
 @inject ProductDetailViewModel Vm
+@inject NavigationManager Navigation
 @implements IDisposable
 
+@* Sin streaming a propósito: el servidor espera a la Api y envía el HTML completo (título, precio, descripción,
+   datos estructurados) en la primera respuesta, con 404 real si el producto no existe. *@
+
 <PageTitle>@(Vm.Product?.Name ?? (Vm.IsNotFound ? "Producto no disponible" : "Producto")) · SimpleEcom</PageTitle>
+
+@if (Vm.Product is { } seoProduct)
+{
+    <SeoMeta Title="@($"{seoProduct.Name} · SimpleEcom")"
+             Description="@CatalogSeo.ProductDescription(seoProduct)"
+             CanonicalPath="@CanonicalPath"
+             OgType="product"
+             JsonLd="@CatalogSeo.ProductJsonLd(seoProduct, Navigation.ToAbsoluteUri(CanonicalPath).ToString())" />
+}
+else
+{
+    <SeoMeta Title="Producto no disponible · SimpleEcom"
+             Description="Este producto no está disponible en SimpleEcom. Descubre el resto del catálogo."
+             CanonicalPath="@CanonicalPath"
+             NoIndex="true" />
+}
 
 <nav aria-label="Ruta de navegación">
     <ol class="breadcrumb">
@@ -87,10 +106,27 @@ else
     [Parameter]
     public Guid Id { get; set; }
 
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    private string CanonicalPath => $"products/{Id}";
+
     protected override void OnInitialized() => Vm.StateChanged += StateHasChanged;
 
     // OnParametersSet (no OnInitialized): al navegar de una ficha a otra se reutiliza el componente y cambia el Id.
-    protected override Task OnParametersSetAsync() => Vm.LoadAsync(Id);
+    protected override async Task OnParametersSetAsync()
+    {
+        await Vm.LoadAsync(Id);
+
+        if (Vm.IsNotFound)
+        {
+            HttpStatus.SetNotFound(HttpContext);
+        }
+        else if (Vm.ErrorMessage is not null)
+        {
+            HttpStatus.SetUnavailable(HttpContext);
+        }
+    }
 
     public void Dispose() => Vm.StateChanged -= StateHasChanged;
 }

@@ -78,7 +78,8 @@ src/
 │   │   ├── Layout/             MainLayout: cabecera con buscador, navegación y pie
 │   │   └── Pages/              Home (portada), Error, NotFound
 │   └── Features/
-│       ├── Catalog/            catálogo, ficha de producto, destacados: ViewModels + componentes .razor
+│       ├── Catalog/            catálogo, ficha de producto, destacados: ViewModels + componentes .razor (+ CatalogSeo)
+│       ├── Seo/                robots.txt, sitemap.xml y códigos HTTP (404/503) de las páginas
 │       └── Branches/           barra "Comprando en…", página /branches y endpoint POST que guarda la sucursal en cookie
 └── SimpleEcom.UI.Web.Admin/
     ├── Common/
@@ -236,9 +237,14 @@ Reglas:
 
 ### 4.6 Tienda pública (UI.Web)
 
-Rutas: `/` (portada con destacados), `/products` (catálogo), `/products/{id}` (ficha), `/branches` (elegir sucursal).
+Rutas: `/` (portada con destacados), `/products` (catálogo), `/products/{id}` (ficha), `/branches` (elegir sucursal), `/robots.txt`, `/sitemap.xml`.
 
-- **Renderizado estático en servidor + `[StreamRendering]`**, sin circuito interactivo: carga rápida y HTML indexable. Mientras llega la Api se muestran esqueletos de carga y el contenido final se envía en streaming.
+- **Renderizado estático en servidor, sin circuito interactivo y SIN `[StreamRendering]` en las páginas**: el servidor espera a la Api y envía el HTML completo en la primera respuesta. Con streaming el contenido llegaba en bloques `<template>` aplicados por JavaScript, el `<title>` inicial era genérico y no se podía devolver un 404 real (las cabeceras ya se habían enviado). La espera es de decenas de ms. Solo se permite streaming en componentes secundarios que no aporten al SEO (p. ej. `BranchBar`).
+- **SEO obligatorio en cada página pública**: `<PageTitle>` + `<SeoMeta>` (`Components/Seo/SeoMeta.razor`: description, canonical absoluta, robots, Open Graph y JSON-LD opcional).
+  - La canonical no lleva parámetros de búsqueda ni orden; los resultados de búsqueda (`?q=`) van con `noindex, follow`.
+  - La ficha publica JSON-LD `Product` con `Offer` (precio, moneda, disponibilidad) generado por `CatalogSeo.ProductJsonLd` (System.Text.Json escapa `<`, así que no puede cerrar el `<script>`).
+  - Códigos HTTP con `HttpStatus` (`Features/Seo/`): 404 si el producto no existe o está inactivo y 503 si la Api falla. Desactiva `UseStatusCodePagesWithReExecute` para esa petición, así se conserva el mensaje propio de la página. Solo funciona sin streaming.
+  - Al añadir una página pública nueva, añadir su ruta a `SeoEndpoints.StaticPaths` (sitemap).
 - Los filtros del catálogo viajan en la URL (`?q=`, `?sort=`, `?available=true`) mediante formularios `GET`; las páginas los leen con `[SupplyParameterFromQuery]` y los pasan al ViewModel. No hay `@onclick` ni `@bind` en la tienda.
 - Mismo reparto MVVM que el Admin: ViewModels en `Features/<Contexto>/`, registrados como Transient con `AddViewModels`. `Common/` es una copia deliberada de la del Admin (duplicación pequeña antes que mover estado de UI a `Shared`).
 - La tienda **solo muestra productos activos**: pide `isActive=true` y vuelve a filtrar en el ViewModel. Un producto inactivo o inexistente se presenta como "no disponible", no como error.

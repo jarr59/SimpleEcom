@@ -2,6 +2,7 @@ using SimpleEcom.Shared.Http;
 using SimpleEcom.UI.Web.Common;
 using SimpleEcom.UI.Web.Components;
 using SimpleEcom.UI.Web.Features.Branches;
+using SimpleEcom.UI.Web.Features.Seo;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,7 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapBranchSelection();
+app.MapSeo();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

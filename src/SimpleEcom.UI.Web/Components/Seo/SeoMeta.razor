@@ -1,0 +1,52 @@
+@* Etiquetas de SEO de una página: descripción, canonical, robots, Open Graph y datos estructurados.
+   Las páginas de la tienda se renderizan sin streaming, así que todo esto llega en el HTML inicial,
+   que es lo que leen los buscadores y las vistas previas de redes sociales. *@
+@inject NavigationManager Navigation
+
+<HeadContent>
+    <meta name="description" content="@Description" />
+    <link rel="canonical" href="@CanonicalUrl" />
+    @if (NoIndex)
+    {
+        <meta name="robots" content="noindex, follow" />
+    }
+    <meta property="og:site_name" content="SimpleEcom" />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:type" content="@OgType" />
+    <meta property="og:title" content="@Title" />
+    <meta property="og:description" content="@Description" />
+    <meta property="og:url" content="@CanonicalUrl" />
+    <meta name="twitter:card" content="summary" />
+    @if (JsonLd is not null)
+    {
+        @* Blazor no permite <script> literal en un componente; el JSON ya viene escapado (ver CatalogSeo). *@
+        @((MarkupString)$"<script type=\"application/ld+json\">{JsonLd}</script>")
+    }
+</HeadContent>
+
+@code {
+    /// <summary>Título para Open Graph (el &lt;title&gt; lo sigue poniendo PageTitle).</summary>
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public string Description { get; set; } = default!;
+
+    /// <summary>Ruta relativa a la base, sin parámetros de búsqueda ni orden (p. ej. "products/{id}"). "" es la portada.</summary>
+    [Parameter]
+    public string CanonicalPath { get; set; } = string.Empty;
+
+    /// <summary>Páginas útiles para navegar pero que no deben indexarse (p. ej. resultados de búsqueda).</summary>
+    [Parameter]
+    public bool NoIndex { get; set; }
+
+    [Parameter]
+    public string OgType { get; set; } = "website";
+
+    /// <summary>JSON-LD ya serializado (schema.org), o null.</summary>
+    [Parameter]
+    public string? JsonLd { get; set; }
+
+    /// <summary>URL absoluta de la página canónica, la usada en canonical, og:url y JSON-LD.</summary>
+    public string CanonicalUrl => Navigation.ToAbsoluteUri(CanonicalPath).ToString();
+}

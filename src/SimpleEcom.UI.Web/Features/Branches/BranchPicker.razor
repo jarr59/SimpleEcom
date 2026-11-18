@@ -1,11 +1,14 @@
 @page "/branches"
-@attribute [StreamRendering]
 @inject BranchPickerViewModel Vm
 @implements IDisposable
 
-@* Cada tarjeta tiene su propio formulario POST (sin JavaScript): el endpoint guarda la cookie y redirige. *@
+@* Cada tarjeta tiene su propio formulario POST (sin JavaScript): el endpoint guarda la cookie y redirige.
+   Sin streaming: las sucursales (direcciones y teléfonos) llegan en el HTML inicial. *@
 
 <PageTitle>Nuestras sucursales · SimpleEcom</PageTitle>
+<SeoMeta Title="Nuestras sucursales · SimpleEcom"
+         Description="Encuentra tu sucursal SimpleEcom: direcciones, teléfonos y modos de entrega (retiro en tienda o envío a domicilio)."
+         CanonicalPath="branches" />
 
 <nav aria-label="Ruta de navegación">
     <ol class="breadcrumb">
