@@ -6,7 +6,7 @@
 @* Sin streaming a propósito: el servidor espera a la Api y envía el HTML completo (título, precio, descripción,
    datos estructurados) en la primera respuesta, con 404 real si el producto no existe. *@
 
-<PageTitle>@(Vm.Product?.Name ?? (Vm.IsNotFound ? "Producto no disponible" : "Producto")) · SimpleEcom</PageTitle>
+<PageTitle>@(Vm.Product?.Name ?? "Producto") · SimpleEcom</PageTitle>
 
 @if (Vm.Product is { } seoProduct)
 {
@@ -35,15 +35,8 @@ else
     </ol>
 </nav>
 
-@if (Vm.IsNotFound)
-{
-    <div class="empty-state">
-        <h1 class="empty-state__title">Este producto no está disponible</h1>
-        <p class="text-muted">Puede que se haya retirado de la tienda o que el enlace no sea correcto.</p>
-        <a class="btn btn-dark" href="products">Ir al catálogo</a>
-    </div>
-}
-else if (Vm.ErrorMessage is not null)
+@* Producto inexistente o inactivo: Navigation.NotFound() (en @code) pinta Pages/NotFound con 404 en lugar de esta página. *@
+@if (Vm.ErrorMessage is not null)
 {
     <div class="alert alert-warning" role="alert">
         <strong>No podemos mostrar el producto ahora mismo.</strong> Inténtalo de nuevo en unos minutos.
@@ -120,7 +113,9 @@ else
 
         if (Vm.IsNotFound)
         {
-            HttpStatus.SetNotFound(HttpContext);
+            // Única vía soportada para un 404 en SSR: un StatusCode = 404 manual hace que Blazor descarte el HTML
+            // (respuesta vacía, o conexión cortada si BranchBar ya empezó el streaming). Pinta NotFoundPage del Router.
+            Navigation.NotFound();
         }
         else if (Vm.ErrorMessage is not null)
         {

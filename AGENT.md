@@ -243,7 +243,8 @@ Rutas: `/` (portada con destacados), `/products` (catálogo), `/products/{id}` (
 - **SEO obligatorio en cada página pública**: `<PageTitle>` + `<SeoMeta>` (`Components/Seo/SeoMeta.razor`: description, canonical absoluta, robots, Open Graph y JSON-LD opcional).
   - La canonical no lleva parámetros de búsqueda ni orden; los resultados de búsqueda (`?q=`) van con `noindex, follow`.
   - La ficha publica JSON-LD `Product` con `Offer` (precio, moneda, disponibilidad) generado por `CatalogSeo.ProductJsonLd` (System.Text.Json escapa `<`, así que no puede cerrar el `<script>`).
-  - Códigos HTTP con `HttpStatus` (`Features/Seo/`): 404 si el producto no existe o está inactivo y 503 si la Api falla. Desactiva `UseStatusCodePagesWithReExecute` para esa petición, así se conserva el mensaje propio de la página. Solo funciona sin streaming.
+  - 404 (producto inexistente o inactivo): `NavigationManager.NotFound()`, que pinta `Pages/NotFound` (con mensaje propio en `products/…` y `noindex`). **Nunca** `Response.StatusCode = 404` a mano: Blazor descarta el HTML de la página y devuelve un 404 vacío, o corta la conexión si `BranchBar` ya empezó el streaming.
+  - 503 (Api caída): `HttpStatus.SetUnavailable` (`Features/Seo/`). Desactiva `UseStatusCodePagesWithReExecute` para esa petición, así se conserva el aviso de la página. Solo funciona sin streaming.
   - Al añadir una página pública nueva, añadir su ruta a `SeoEndpoints.StaticPaths` (sitemap).
 - Los filtros del catálogo viajan en la URL (`?q=`, `?sort=`, `?available=true`) mediante formularios `GET`; las páginas los leen con `[SupplyParameterFromQuery]` y los pasan al ViewModel. No hay `@onclick` ni `@bind` en la tienda.
 - Mismo reparto MVVM que el Admin: ViewModels en `Features/<Contexto>/`, registrados como Transient con `AddViewModels`. `Common/` es una copia deliberada de la del Admin (duplicación pequeña antes que mover estado de UI a `Shared`).
@@ -327,6 +328,18 @@ Puertos de desarrollo (`Properties/launchSettings.json`):
 | UI.Web.Admin | `https://localhost:7146` | `http://localhost:5283` |
 
 Peticiones de ejemplo: [src/SimpleEcom.Api/SimpleEcom.Api.http](src/SimpleEcom.Api/SimpleEcom.Api.http).
+
+Validación de extremo a extremo (compila, tests, arranca las tres aplicaciones, comprueba Api, tienda —SEO, 404/503,
+sitemap, móvil, elegir sucursal— y Admin con CRUD real en Edge mediante Playwright, y las detiene):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/site-validation/run.ps1   # -SkipTests, -UseRunning
+```
+
+Resultados en `%TEMP%\simpleecom-validation\` (`summary.txt`, `report.json`, logs y capturas). Los datos de prueba
+llevan el prefijo `QAVAL` y se borran al terminar. En Claude Code, el agente `site-validator`
+(`.claude/agents/`) lo ejecuta e interpreta los fallos. Si cambias un texto o un `id` del Admin o de la tienda,
+actualiza `tools/site-validation/validate.mjs`.
 
 > Nota del entorno local: si los tests fallan con `An Application Control policy has blocked this file (0x800711C7)`, es una política de Windows (Smart App Control/WDAC) bloqueando DLLs sin firmar, no un error de código. Compilar fuera de la carpeta de OneDrive suele evitarlo: `dotnet test SimpleEcom.slnx --artifacts-path %TEMP%\simpleecom-out` (igual con `dotnet run`).
 

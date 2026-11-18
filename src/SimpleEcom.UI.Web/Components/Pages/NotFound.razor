@@ -1,10 +1,29 @@
 ﻿@page "/not-found"
 @layout MainLayout
+@inject NavigationManager Navigation
 
-<PageTitle>Página no encontrada · SimpleEcom</PageTitle>
+@* Página de 404 del Router (NotFoundPage) y destino de UseStatusCodePagesWithReExecute.
+   Con NavigationManager.NotFound() la URL sigue siendo la original: en una ficha se explica que el producto no está. *@
+
+<PageTitle>@Title</PageTitle>
+<SeoMeta Title="@Title" Description="@Message" CanonicalPath="@RelativePath" NoIndex="true" />
 
 <div class="empty-state">
-    <h1 class="empty-state__title">No encontramos esta página</h1>
-    <p class="text-muted">Puede que el enlace esté roto o que la página ya no exista.</p>
+    <h1 class="empty-state__title">@Heading</h1>
+    <p class="text-muted">@Message</p>
     <a class="btn btn-dark" href="products">Ir al catálogo</a>
 </div>
+
+@code {
+    private string RelativePath => Navigation.ToBaseRelativePath(Navigation.Uri);
+
+    private bool IsProduct => RelativePath.StartsWith("products/", StringComparison.OrdinalIgnoreCase);
+
+    private string Title => IsProduct ? "Producto no disponible · SimpleEcom" : "Página no encontrada · SimpleEcom";
+
+    private string Heading => IsProduct ? "Este producto no está disponible" : "No encontramos esta página";
+
+    private string Message => IsProduct
+        ? "Puede que se haya retirado de la tienda o que el enlace no sea correcto."
+        : "Puede que el enlace esté roto o que la página ya no exista.";
+}
