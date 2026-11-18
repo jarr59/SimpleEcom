@@ -1,0 +1,12 @@
+{
+  "name": "simpleecom-site-validation",
+  "private": true,
+  "description": "Validación de extremo a extremo de la Api, la tienda y el Admin (Playwright con el Edge instalado).",
+  "type": "module",
+  "scripts": {
+    "validate": "node validate.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.65.1"
+  }
+}
