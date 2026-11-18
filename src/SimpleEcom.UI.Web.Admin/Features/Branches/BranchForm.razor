@@ -1,0 +1,75 @@
+@* Formulario de alta/edición. Renderiza el estado del BranchEditorViewModel; no contiene lógica. *@
+
+<EditForm Model="Vm.Form" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+
+    @if (Vm.Save.Error is not null)
+    {
+        <div class="alert alert-danger" role="alert">@Vm.Save.Error</div>
+    }
+
+    @* Mientras se guarda, todos los campos quedan bloqueados para evitar cambios a medias. *@
+    <fieldset disabled="@Vm.Save.IsBusy" aria-busy="@(Vm.Save.IsBusy ? "true" : null)">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="code" class="form-label">Código</label>
+                <InputText id="code" class="form-control" placeholder="p. ej. CENTRO" @bind-Value="Vm.Form.Code" disabled="@Vm.IsEdit" />
+                @if (Vm.IsEdit)
+                {
+                    <div class="form-text">El código no se puede modificar.</div>
+                }
+                <ValidationMessage For="() => Vm.Form.Code" class="text-danger" />
+            </div>
+
+            <div class="col-md-8">
+                <label for="name" class="form-label">Nombre</label>
+                <InputText id="name" class="form-control" @bind-Value="Vm.Form.Name" />
+                <ValidationMessage For="() => Vm.Form.Name" class="text-danger" />
+            </div>
+
+            <div class="col-md-8">
+                <label for="address" class="form-label">Dirección</label>
+                <InputText id="address" class="form-control" @bind-Value="Vm.Form.Address" />
+                <ValidationMessage For="() => Vm.Form.Address" class="text-danger" />
+            </div>
+
+            <div class="col-md-4">
+                <label for="phone" class="form-label">Teléfono <span class="text-muted">(opcional)</span></label>
+                <InputText id="phone" class="form-control" type="tel" @bind-Value="Vm.Form.Phone" />
+                <ValidationMessage For="() => Vm.Form.Phone" class="text-danger" />
+            </div>
+
+            <div class="col-12">
+                <fieldset>
+                    <legend class="form-label fs-6">Modos de entrega</legend>
+                    <div class="form-check form-switch">
+                        <InputCheckbox id="allowsPickup" class="form-check-input" role="switch" @bind-Value="Vm.Form.AllowsPickup" />
+                        <label for="allowsPickup" class="form-check-label">Retiro en sucursal</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <InputCheckbox id="allowsDelivery" class="form-check-input" role="switch" @bind-Value="Vm.Form.AllowsDelivery" />
+                        <label for="allowsDelivery" class="form-check-label">Envío a domicilio</label>
+                    </div>
+                    <ValidationMessage For="() => Vm.Form.AllowsPickup" class="text-danger" />
+                </fieldset>
+            </div>
+        </div>
+    </fieldset>
+
+    <div class="d-flex gap-2 mt-4">
+        <BusyButton Type="submit" Busy="Vm.Save.IsBusy" BusyText="Guardando…">@Vm.SubmitText</BusyButton>
+        <a class="btn btn-outline-secondary @(Vm.Save.IsBusy ? "disabled" : null)"
+           aria-disabled="@(Vm.Save.IsBusy ? "true" : null)"
+           tabindex="@(Vm.Save.IsBusy ? -1 : 0)"
+           href="branches">Cancelar</a>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public BranchEditorViewModel Vm { get; set; } = default!;
+
+    /// <summary>Se invoca cuando el formulario pasa la validación de la UI; la página decide guardar y navegar.</summary>
+    [Parameter]
+    public EventCallback OnValidSubmit { get; set; }
+}

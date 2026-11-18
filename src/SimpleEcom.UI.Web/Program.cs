@@ -1,6 +1,7 @@
 using SimpleEcom.Shared.Http;
 using SimpleEcom.UI.Web.Common;
 using SimpleEcom.UI.Web.Components;
+using SimpleEcom.UI.Web.Features.Branches;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,10 +10,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Cliente tipado hacia SimpleEcom.Api (URL en appsettings: Api:BaseUrl)
-builder.Services.AddHttpClient<ProductsApiClient>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["Api:BaseUrl"]
-        ?? throw new InvalidOperationException("Falta la configuración 'Api:BaseUrl'.")));
+// Clientes tipados hacia SimpleEcom.Api (URL en appsettings: Api:BaseUrl)
+var apiBaseUrl = new Uri(builder.Configuration["Api:BaseUrl"]
+    ?? throw new InvalidOperationException("Falta la configuración 'Api:BaseUrl'."));
+builder.Services.AddHttpClient<ProductsApiClient>(client => client.BaseAddress = apiBaseUrl);
+builder.Services.AddHttpClient<BranchesApiClient>(client => client.BaseAddress = apiBaseUrl);
 
 builder.Services.AddSingleton(TimeProvider.System);
 
@@ -30,7 +32,11 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+// Valida el token de los formularios POST (p. ej. la elección de sucursal).
+app.UseAntiforgery();
+
 app.MapStaticAssets();
+app.MapBranchSelection();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

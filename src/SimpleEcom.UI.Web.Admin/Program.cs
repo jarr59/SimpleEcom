@@ -8,10 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Cliente tipado hacia SimpleEcom.Api (URL en appsettings: Api:BaseUrl)
-builder.Services.AddHttpClient<ProductsApiClient>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["Api:BaseUrl"]
-        ?? throw new InvalidOperationException("Falta la configuración 'Api:BaseUrl'.")));
+// Clientes tipados hacia SimpleEcom.Api (URL en appsettings: Api:BaseUrl)
+var apiBaseUrl = new Uri(builder.Configuration["Api:BaseUrl"]
+    ?? throw new InvalidOperationException("Falta la configuración 'Api:BaseUrl'."));
+builder.Services.AddHttpClient<ProductsApiClient>(client => client.BaseAddress = apiBaseUrl);
+builder.Services.AddHttpClient<BranchesApiClient>(client => client.BaseAddress = apiBaseUrl);
 
 // ViewModels de Features/: uno nuevo por cada instancia de página (Transient).
 builder.Services.AddViewModels(typeof(Program).Assembly);

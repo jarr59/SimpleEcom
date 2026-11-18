@@ -1,0 +1,69 @@
+@* Barra bajo la cabecera: en qué sucursal compra el cliente, o una invitación a elegirla.
+   No bloquea la navegación (los enlaces directos y los buscadores siguen funcionando).
+   Streaming: la llamada a la Api no retrasa el envío de la página; el hueco está reservado en CSS para que no salte. *@
+@attribute [StreamRendering]
+@inject CurrentBranchViewModel Vm
+@inject NavigationManager Navigation
+@implements IDisposable
+
+@* Sin sucursales activas o con la Api caída no se pinta la barra (ni siquiera vacía). *@
+@if (!Vm.IsLoaded || Vm.IsVisible)
+{
+<div class="branch-bar">
+    <div class="container branch-bar__inner">
+        @if (!Vm.IsLoaded)
+        {
+            <span class="skeleton skeleton-line branch-bar__skeleton" aria-hidden="true"></span>
+        }
+        else if (Vm.Current is { } branch)
+        {
+            <p class="branch-bar__text">
+                <svg class="branch-bar__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" />
+                </svg>
+                <span>Comprando en <strong>@branch.Name</strong></span>
+                <span class="branch-bar__modes">· @string.Join(" y ", BranchPickerViewModel.FulfillmentLabels(branch)).ToLowerInvariant()</span>
+            </p>
+            @if (Vm.CanChange && !IsOnBranchesPage)
+            {
+                <a class="branch-bar__link" href="@ChangeHref">Cambiar<span class="visually-hidden"> de sucursal</span></a>
+            }
+        }
+        else if (Vm.NeedsSelection)
+        {
+            <p class="branch-bar__text">
+                <svg class="branch-bar__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" />
+                </svg>
+                <span>Elige tu sucursal para comprar con retiro en tienda o envío a domicilio.</span>
+            </p>
+            @if (!IsOnBranchesPage)
+            {
+                <a class="btn btn-sm btn-dark" href="@ChangeHref">Elegir sucursal</a>
+            }
+        }
+    </div>
+</div>
+}
+
+@code {
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    private string RelativePath => Navigation.ToBaseRelativePath(Navigation.Uri);
+
+    private bool IsOnBranchesPage =>
+        RelativePath.Equals("branches", StringComparison.OrdinalIgnoreCase) ||
+        RelativePath.StartsWith("branches?", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Tras elegir, el cliente vuelve a la página en la que estaba.</summary>
+    private string ChangeHref => $"branches?returnUrl={Uri.EscapeDataString("/" + RelativePath)}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Vm.StateChanged += StateHasChanged;
+        await Vm.LoadAsync(BranchCookie.Read(HttpContext));
+    }
+
+    public void Dispose() => Vm.StateChanged -= StateHasChanged;
+}

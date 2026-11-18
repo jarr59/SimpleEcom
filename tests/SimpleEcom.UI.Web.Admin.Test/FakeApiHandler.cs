@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using SimpleEcom.Shared.Contracts;
+using SimpleEcom.Shared.Contracts.Branches;
 using SimpleEcom.Shared.Contracts.Products;
 using SimpleEcom.Shared.Http;
 
@@ -28,8 +29,12 @@ internal sealed class FakeApiHandler : HttpMessageHandler
         return this;
     }
 
-    public ProductsApiClient CreateClient() =>
-        new(new HttpClient(this) { BaseAddress = new Uri("https://api.test/") });
+    public ProductsApiClient CreateClient() => new(CreateHttpClient());
+
+    public BranchesApiClient CreateBranchesClient() => new(CreateHttpClient());
+
+    private HttpClient CreateHttpClient() =>
+        new(this, disposeHandler: false) { BaseAddress = new Uri("https://api.test/") };
 
     public static HttpResponseMessage Response(HttpStatusCode status, object? body = null)
     {
@@ -48,6 +53,15 @@ internal sealed class FakeApiHandler : HttpMessageHandler
 
     public static ProductResponse Product(Guid? id = null, string sku = "SKU-1", string name = "Camiseta", bool isActive = true) =>
         new(id ?? Guid.NewGuid(), sku, name, null, 19.99m, Currency.USD, 10, isActive);
+
+    public static BranchResponse Branch(
+        Guid? id = null,
+        string code = "CENTRO",
+        string name = "Sucursal Centro",
+        bool allowsPickup = true,
+        bool allowsDelivery = true,
+        bool isActive = true) =>
+        new(id ?? Guid.NewGuid(), code, name, "Calle 1", null, allowsPickup, allowsDelivery, isActive);
 
     public int CountRequests(HttpMethod method, string pathAndQuery) =>
         Requests.Count(r => r == Key(method, pathAndQuery));

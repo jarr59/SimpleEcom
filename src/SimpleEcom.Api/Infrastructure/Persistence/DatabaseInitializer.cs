@@ -1,10 +1,15 @@
 using Microsoft.EntityFrameworkCore;
+using SimpleEcom.Api.Domain.Branches;
 using SimpleEcom.Api.Domain.Products;
 using SimpleEcom.Shared.Contracts;
 
 namespace SimpleEcom.Api.Infrastructure.Persistence;
 
-/// <summary>Aplica las migraciones pendientes y carga datos de ejemplo si la tabla de productos está vacía.</summary>
+/// <summary>
+/// Aplica las migraciones pendientes y carga datos de ejemplo en las tablas que estén vacías
+/// (productos y sucursal principal). Cada tabla se comprueba por separado, así una base ya existente
+/// recibe la sucursal principal aunque ya tenga productos.
+/// </summary>
 public static class DatabaseInitializer
 {
     public static async Task InitializeAsync(IServiceProvider services, CancellationToken cancellationToken = default)
@@ -16,20 +21,37 @@ public static class DatabaseInitializer
 
         await dbContext.Database.MigrateAsync(cancellationToken);
 
-        if (await dbContext.Products.AnyAsync(cancellationToken))
+        if (!await dbContext.Products.AnyAsync(cancellationToken))
         {
-            return;
+            var products = SampleProducts
+                .Select(s => Product.Create(s.Sku, s.Name, s.Description, Money.Create(s.Price, Currency.USD).Value, s.Stock, timeProvider))
+                .Select(r => r.Value)
+                .ToList();
+
+            dbContext.Products.AddRange(products);
+            await dbContext.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Cargados {Count} productos de ejemplo.", products.Count);
         }
 
-        var products = SampleProducts
-            .Select(s => Product.Create(s.Sku, s.Name, s.Description, Money.Create(s.Price, Currency.USD).Value, s.Stock, timeProvider))
-            .Select(r => r.Value)
-            .ToList();
+        if (!await dbContext.Branches.AnyAsync(cancellationToken))
+        {
+            var main = Branch.Create(
+                MainBranchCode,
+                "Sucursal Principal",
+                "Dirección por definir",
+                phone: null,
+                allowsPickup: true,
+                allowsDelivery: true,
+                timeProvider).Value;
 
-        dbContext.Products.AddRange(products);
-        await dbContext.SaveChangesAsync(cancellationToken);
-        logger.LogInformation("Cargados {Count} productos de ejemplo.", products.Count);
+            dbContext.Branches.Add(main);
+            await dbContext.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Creada la sucursal principal '{Code}'.", main.Code);
+        }
     }
+
+    /// <summary>Código de la sucursal que se crea al arrancar si no hay ninguna.</summary>
+    public const string MainBranchCode = "PRINCIPAL";
 
     private static readonly (string Sku, string Name, string Description, decimal Price, int Stock)[] SampleProducts =
     [

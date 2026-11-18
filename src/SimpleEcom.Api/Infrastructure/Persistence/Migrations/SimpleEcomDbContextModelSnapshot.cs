@@ -17,7 +17,7 @@ partial class SimpleEcomDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261117034906_InitialCreate";
+    public override string LastMigrationId => "20261118030153_AddBranches";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -27,6 +27,47 @@ partial class SimpleEcomDbContextModelSnapshot : ModelSnapshot
             .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
         SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+        modelBuilder.Entity("SimpleEcom.Api.Domain.Branches.Branch", b =>
+            {
+                b.Property<Guid>("Id")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("Address")
+                    .IsRequired()
+                    .HasMaxLength(500)
+                    .HasColumnType("nvarchar(500)");
+
+                b.Property<bool>("AllowsDelivery")
+                    .HasColumnType("bit");
+
+                b.Property<bool>("AllowsPickup")
+                    .HasColumnType("bit");
+
+                b.Property<string>("Code")
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnType("nvarchar(20)");
+
+                b.Property<bool>("IsActive")
+                    .HasColumnType("bit");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("nvarchar(200)");
+
+                b.Property<string>("Phone")
+                    .HasMaxLength(30)
+                    .HasColumnType("nvarchar(30)");
+
+                b.HasKey("Id");
+
+                b.HasIndex("Code")
+                    .IsUnique();
+
+                b.ToTable("Branches");
+            });
 
         modelBuilder.Entity("SimpleEcom.Api.Domain.Products.Product", b =>
             {
