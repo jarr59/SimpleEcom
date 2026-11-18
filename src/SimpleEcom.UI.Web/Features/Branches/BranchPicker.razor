@@ -1,0 +1,139 @@
+@page "/branches"
+@attribute [StreamRendering]
+@inject BranchPickerViewModel Vm
+@implements IDisposable
+
+@* Cada tarjeta tiene su propio formulario POST (sin JavaScript): el endpoint guarda la cookie y redirige. *@
+
+<PageTitle>Nuestras sucursales · SimpleEcom</PageTitle>
+
+<nav aria-label="Ruta de navegación">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="">Inicio</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Sucursales</li>
+    </ol>
+</nav>
+
+<div class="page-header page-header--stacked">
+    <h1 class="page-title">Elige tu sucursal</h1>
+    <p class="page-subtitle">Compra en la sucursal que prefieras y recoge tu pedido allí o recíbelo en casa. Puedes cambiarla cuando quieras.</p>
+    <p class="page-note">Recordamos tu elección en este navegador (solo la sucursal, ningún dato personal) para no volver a preguntarte.</p>
+</div>
+
+@if (Vm.StatusMessage is not null)
+{
+    <div class="alert alert-warning" role="status">@Vm.StatusMessage</div>
+}
+
+@if (Vm.ErrorMessage is not null)
+{
+    <div class="alert alert-warning" role="alert">
+        <strong>No podemos mostrar las sucursales ahora mismo.</strong> Inténtalo de nuevo en unos minutos.
+    </div>
+}
+else if (Vm.Branches is null)
+{
+    <ul class="branch-list" role="list" aria-busy="true">
+        @for (var i = 0; i < 3; i++)
+        {
+            <li class="branch-card" aria-hidden="true">
+                <div class="skeleton skeleton-line skeleton-line--lg w-50"></div>
+                <div class="skeleton skeleton-line w-75"></div>
+                <div class="skeleton skeleton-line w-25"></div>
+            </li>
+        }
+    </ul>
+}
+else if (Vm.Branches.Count == 0)
+{
+    <div class="empty-state">
+        <p class="empty-state__title">Todavía no tenemos sucursales disponibles.</p>
+        <p class="text-muted">Vuelve pronto: estamos preparando la apertura.</p>
+    </div>
+}
+else
+{
+    <ul class="branch-list" role="list">
+        @foreach (var branch in Vm.Branches)
+        {
+            var isCurrent = Vm.IsCurrent(branch.Id);
+            var nameId = $"branch-{branch.Id:N}";
+            var phoneHref = BranchPickerViewModel.PhoneHref(branch.Phone);
+
+            @* Tarjeta: <article> con cabecera, contenido y pie de acciones como hijos directos. *@
+            <li @key="branch.Id">
+                <article class="branch-card @(isCurrent ? "branch-card--current" : null)">
+                    <header>
+                        <h2 id="@nameId" class="branch-card__name">@branch.Name</h2>
+                        @if (isCurrent)
+                        {
+                            <span class="branch-card__current">Tu sucursal</span>
+                        }
+                    </header>
+
+                    <div>
+                        <address class="branch-card__address">
+                            @branch.Address
+                            @if (phoneHref is not null)
+                            {
+                                <br />
+                                <a href="@phoneHref">@branch.Phone</a>
+                            }
+                        </address>
+
+                        @* Los textos ("Retiro en tienda", "Envío a domicilio") se explican solos: la lista no necesita nombre. *@
+                        <ul class="branch-card__modes" role="list">
+                            @foreach (var label in BranchPickerViewModel.FulfillmentLabels(branch))
+                            {
+                                <li class="fulfillment-badge">@label</li>
+                            }
+                        </ul>
+                    </div>
+
+                    <footer>
+                        @if (isCurrent)
+                        {
+                            <p class="branch-card__hint">Ya estás comprando en esta sucursal.</p>
+                        }
+                        else
+                        {
+                            @* Varios formularios en la página: cada uno se nombra con el título de su tarjeta.
+                               Elegir la misma sucursal dos veces es inofensivo (solo reescribe la cookie), por eso no se bloquea el botón con JS. *@
+                            <form method="post" action="@BranchSelectionEndpoint.Path" aria-labelledby="@nameId">
+                                <AntiforgeryToken />
+                                <input type="hidden" name="branchId" value="@branch.Id" />
+                                @if (Vm.ReturnUrl is not null)
+                                {
+                                    <input type="hidden" name="returnUrl" value="@Vm.ReturnUrl" />
+                                }
+                                <button type="submit" class="btn btn-dark">
+                                    Comprar en esta sucursal<span class="visually-hidden">: @branch.Name</span>
+                                </button>
+                            </form>
+                        }
+                    </footer>
+                </article>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "status")]
+    public string? Status { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Vm.StateChanged += StateHasChanged;
+        Vm.Initialize(BranchCookie.Read(HttpContext), ReturnUrl, Status);
+        await Vm.LoadAsync();
+    }
+
+    public void Dispose() => Vm.StateChanged -= StateHasChanged;
+}

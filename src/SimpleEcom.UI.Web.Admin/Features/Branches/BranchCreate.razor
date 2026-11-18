@@ -1,0 +1,36 @@
+@page "/branches/new"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject BranchEditorViewModel Vm
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>Nueva sucursal · SimpleEcom Admin</PageTitle>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="branches">Sucursales</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Nueva</li>
+    </ol>
+</nav>
+
+<h1 class="h3 mb-4">Nueva sucursal</h1>
+
+<BranchForm Vm="Vm" OnValidSubmit="SaveAsync" />
+
+@code {
+    protected override void OnInitialized()
+    {
+        Vm.StateChanged += StateHasChanged;
+        Vm.StartNew();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (await Vm.SaveAsync())
+        {
+            Navigation.NavigateTo("branches?status=created");
+        }
+    }
+
+    public void Dispose() => Vm.StateChanged -= StateHasChanged;
+}

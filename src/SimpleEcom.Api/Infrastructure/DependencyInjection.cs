@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SimpleEcom.Api.Domain.Branches;
 using SimpleEcom.Api.Domain.Products;
 using SimpleEcom.Api.Infrastructure.Persistence;
 
@@ -14,6 +15,7 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddDbContext<SimpleEcomDbContext>(options => options.UseSqlServer(connectionString));
         services.AddScoped<IProductRepository, SqlProductRepository>();
+        services.AddScoped<IBranchRepository, SqlBranchRepository>();
         return services;
     }
 }

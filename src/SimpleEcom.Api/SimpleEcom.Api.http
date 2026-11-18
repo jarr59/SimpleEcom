@@ -42,3 +42,48 @@ POST {{SimpleEcom.Api_HostAddress}}/api/products/{{productId}}/activate
 
 ### Eliminar
 DELETE {{SimpleEcom.Api_HostAddress}}/api/products/{{productId}}
+
+### ───────── Sucursales ─────────
+@branchId = 00000000-0000-0000-0000-000000000000
+
+### Listar sucursales (filtros opcionales: search, isActive)
+GET {{SimpleEcom.Api_HostAddress}}/api/branches?isActive=true
+Accept: application/json
+
+### Obtener sucursal por Id
+GET {{SimpleEcom.Api_HostAddress}}/api/branches/{{branchId}}
+Accept: application/json
+
+### Crear sucursal (debe ofrecer retiro, envío o ambos)
+POST {{SimpleEcom.Api_HostAddress}}/api/branches
+Content-Type: application/json
+
+{
+  "code": "NORTE",
+  "name": "Sucursal Norte",
+  "address": "Av. Principal 123, Zona Norte",
+  "phone": "+1 555 0100",
+  "allowsPickup": true,
+  "allowsDelivery": true
+}
+
+### Editar sucursal (el código no se modifica)
+PUT {{SimpleEcom.Api_HostAddress}}/api/branches/{{branchId}}
+Content-Type: application/json
+
+{
+  "name": "Sucursal Norte",
+  "address": "Av. Principal 456, Zona Norte",
+  "phone": null,
+  "allowsPickup": true,
+  "allowsDelivery": false
+}
+
+### Desactivar sucursal
+POST {{SimpleEcom.Api_HostAddress}}/api/branches/{{branchId}}/deactivate
+
+### Activar sucursal
+POST {{SimpleEcom.Api_HostAddress}}/api/branches/{{branchId}}/activate
+
+### Eliminar sucursal
+DELETE {{SimpleEcom.Api_HostAddress}}/api/branches/{{branchId}}

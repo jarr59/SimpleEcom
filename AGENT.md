@@ -46,15 +46,17 @@ src/
 ├── SimpleEcom.Shared/
 │   ├── Domain/          Entity<TId>, AggregateRoot<TId>, ValueObject, IDomainEvent
 │   ├── Results/         Result, Result<T>, Error, ErrorType
-│   ├── Contracts/       DTOs de request/response por contexto (Products/…)
-│   └── Http/            Clientes tipados de la Api (ProductsApiClient)
+│   ├── Contracts/       DTOs de request/response por contexto (Products/, Branches/…)
+│   └── Http/            Clientes tipados de la Api (ProductsApiClient, BranchesApiClient)
 ├── SimpleEcom.Api/
 │   ├── Common/
 │   │   ├── Endpoints/   IEndpoint + auto-registro (AddEndpoints, AddFeatureHandlers, MapEndpoints)
 │   │   └── Http/        ResultHttpExtensions (Result → ProblemDetails)
 │   ├── Domain/
-│   │   └── Products/    Product, ProductId, Money, ProductErrors, IProductRepository, Events/
+│   │   ├── Products/    Product, ProductId, Money, ProductErrors, IProductRepository, Events/
+│   │   └── Branches/    Branch (sucursal), BranchId, BranchErrors, IBranchRepository, Events/
 │   ├── Features/
+│   │   ├── Branches/    CRUD de sucursales (mismo patrón que Products)
 │   │   └── Products/
 │   │       ├── CreateProduct/CreateProduct.cs
 │   │       ├── GetProductById/GetProductById.cs
@@ -65,9 +67,9 @@ src/
 │   │   │   ├── SimpleEcomDbContext.cs
 │   │   │   ├── Configurations/   IEntityTypeConfiguration por agregado
 │   │   │   ├── Migrations/       generadas con dotnet-ef (no editar a mano)
-│   │   │   ├── SqlProductRepository.cs
-│   │   │   ├── InMemoryProductRepository.cs   (solo tests)
-│   │   │   └── DatabaseInitializer.cs         migra + carga datos de ejemplo
+│   │   │   ├── SqlProductRepository.cs / SqlBranchRepository.cs
+│   │   │   ├── InMemoryProductRepository.cs / InMemoryBranchRepository.cs   (solo tests)
+│   │   │   └── DatabaseInitializer.cs         migra + carga datos de ejemplo y la sucursal principal
 │   │   └── DependencyInjection.cs
 │   └── Program.cs
 ├── SimpleEcom.UI.Web/
@@ -76,7 +78,8 @@ src/
 │   │   ├── Layout/             MainLayout: cabecera con buscador, navegación y pie
 │   │   └── Pages/              Home (portada), Error, NotFound
 │   └── Features/
-│       └── Catalog/            catálogo, ficha de producto, destacados: ViewModels + componentes .razor
+│       ├── Catalog/            catálogo, ficha de producto, destacados: ViewModels + componentes .razor
+│       └── Branches/           barra "Comprando en…", página /branches y endpoint POST que guarda la sucursal en cookie
 └── SimpleEcom.UI.Web.Admin/
     ├── Common/
     │   ├── ViewModelBase.cs        evento StateChanged + Notify()
@@ -87,7 +90,8 @@ src/
     │   ├── Pages/                  Home, Error, NotFound (páginas sin lógica)
     │   └── Shared/                 BusyButton y otros componentes reutilizables
     └── Features/
-        └── Products/               módulo completo: ViewModels + FormModel + páginas .razor
+        ├── Products/               módulo completo: ViewModels + FormModel + páginas .razor
+        └── Branches/               módulo de sucursales (/branches), mismo reparto que Products
 tests/
 ├── SimpleEcom.Api.Test/
 │   ├── Domain/          Tests de agregados y objetos de valor
@@ -190,7 +194,7 @@ Reglas del slice:
 ### 4.3 Persistencia (EF Core + SQL Server LocalDB)
 
 - Cadena de conexión en `appsettings.json` → `ConnectionStrings:SimpleEcom`.
-- `DatabaseInitializer.InitializeAsync` se ejecuta al arrancar la Api: aplica `MigrateAsync()` y, si la tabla `Products` está vacía, inserta productos de ejemplo. No hace falta crear la base a mano.
+- `DatabaseInitializer.InitializeAsync` se ejecuta al arrancar la Api: aplica `MigrateAsync()`, inserta productos de ejemplo si `Products` está vacía y crea la sucursal `PRINCIPAL` si `Branches` está vacía (cada tabla se comprueba por separado). No hace falta crear la base a mano.
 - Mapeo en `Infrastructure/Persistence/Configurations/<Agregado>Configuration.cs`:
   - Id tipado → `HasConversion(id => id.Value, v => new XxxId(v))`.
   - Objetos de valor → `ComplexProperty` (columnas en la misma tabla). `Money` se guarda como `Price` + `Currency` (texto).
@@ -232,7 +236,7 @@ Reglas:
 
 ### 4.6 Tienda pública (UI.Web)
 
-Rutas: `/` (portada con destacados), `/products` (catálogo), `/products/{id}` (ficha).
+Rutas: `/` (portada con destacados), `/products` (catálogo), `/products/{id}` (ficha), `/branches` (elegir sucursal).
 
 - **Renderizado estático en servidor + `[StreamRendering]`**, sin circuito interactivo: carga rápida y HTML indexable. Mientras llega la Api se muestran esqueletos de carga y el contenido final se envía en streaming.
 - Los filtros del catálogo viajan en la URL (`?q=`, `?sort=`, `?available=true`) mediante formularios `GET`; las páginas los leen con `[SupplyParameterFromQuery]` y los pasan al ViewModel. No hay `@onclick` ni `@bind` en la tienda.
@@ -241,6 +245,11 @@ Rutas: `/` (portada con destacados), `/products` (catálogo), `/products/{id}` (
 - Reglas de presentación (formato de precio por moneda, umbral de "últimas unidades", imagen de reserva por SKU) en `Features/Catalog/CatalogDisplay.cs`. Los órdenes válidos en `CatalogSort.cs`.
 - Si se necesita interactividad (p. ej. el carrito), usar islas con `@rendermode InteractiveServer` en el componente concreto, no en toda la página. El modo interactivo ya está registrado en `Program.cs`.
 - Estilos propios en `wwwroot/app.css`, con tokens CSS en `:root` sobre Bootstrap.
+- **Sucursal del comprador** (`Features/Branches/`):
+  - Se guarda en una cookie con el Id de la sucursal (HttpOnly, SameSite=Lax, Path=/, 1 año): `__Host-simpleecom-branch` por HTTPS (Secure) y `simpleecom-branch` solo por HTTP local (el prefijo `__Host-` exige Secure). Leerla con `BranchCookie.Read(HttpContext)` usando `[CascadingParameter] HttpContext`.
+  - Se elige con un formulario `POST` normal (sin `data-enhance`, con `<AntiforgeryToken />`) a `branches/select` (`BranchSelectionEndpoint`): valida en la Api que la sucursal exista y esté activa, escribe la cookie y redirige al `returnUrl` solo si es una ruta local (`SafeReturnUrl`). Es un endpoint y no un componente porque las páginas se envían en streaming y la cookie debe escribirse antes de empezar la respuesta. `Program.cs` llama a `UseAntiforgery()`.
+  - `BranchBar` (en `MainLayout`, con `[StreamRendering]`) muestra "Comprando en X · Cambiar" o invita a elegir. No bloquea la navegación. Si solo hay una sucursal activa se asume esa; una cookie de una sucursal inactiva o inexistente cuenta como "sin elegir".
+  - Pendiente (fases 2–3): usar la sucursal elegida para pedir precios y disponibilidad por sucursal al catálogo y a la ficha.
 
 ---
 
@@ -363,6 +372,12 @@ Peticiones de ejemplo: [src/SimpleEcom.Api/SimpleEcom.Api.http](src/SimpleEcom.A
 - ✅ Contexto **Products** en la Api: crear, listar (con filtros `search` e `isActive`), obtener por Id, editar, activar/desactivar y eliminar.
 - ✅ Módulo de administración de productos en `UI.Web.Admin` (`/products`, `/products/new`, `/products/{id}/edit`), con MVVM ligero (`Features/Products/`) y tests de ViewModels.
 - ✅ Persistencia con EF Core 11 sobre SQL Server LocalDB, migración `InitialCreate` y carga de datos de ejemplo al arrancar.
+- ✅ Contexto **Branches** (sucursales): CRUD en la Api (`/api/branches`), módulo en el Admin (`/branches`), migración `AddBranches` y sucursal `PRINCIPAL` inicial. Cada sucursal ofrece retiro en tienda, envío a domicilio o ambos (al menos uno).
+- ⏳ **Multi-sucursal** (diseño acordado), siguientes fases:
+  2. Precios y surtido: `Product.Price` → `BasePrice`; `BranchProduct` (IsListed, PriceOverride). Precio efectivo = override ?? base. Una sola moneda (USD).
+  3. Inventario: `BranchStock` (OnHand, Reserved, RowVersion) + `StockMovement` (kardex: entrada, venta, ajuste, traslado). Migrar `Product.Stock` a la sucursal principal y quitarlo de `Product`. Al existir stock, impedir borrar una sucursal con movimientos (desactivarla).
+  4. Tienda: ✅ el cliente elige su sucursal (barra + `/branches` + cookie). ⏳ El catálogo mostrará precio y disponibilidad de esa sucursal cuando existan las fases 2 y 3.
+  5. Pedidos: una sola sucursal de venta (fija el precio). Si no tiene stock se surte desde otra de forma transparente: en retiro hay traslado y se avisa "listo para retirar en X días"; en envío sale directo de la sucursal de origen.
 - ⏳ Despacho de eventos de dominio (hoy se acumulan en el agregado pero no se publican).
 - ⏳ Contextos Customers, Carts y Orders.
 - ✅ Tienda pública en `UI.Web`: portada, catálogo con búsqueda/orden/disponibilidad y ficha de producto, con tests de ViewModels.
